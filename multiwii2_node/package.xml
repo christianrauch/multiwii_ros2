@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>multiwii_node</name>
+  <version>0.0.0</version>
+  <description>MultiWii node</description>
+
+  <maintainer email="Rauch.Christian@gmx.de">Christian Rauch</maintainer>
+
+  <license>BSD</license>
+
+  <author email="Rauch.Christian@gmx.de">Christian Rauch</author>
+
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>msp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>mavros_msgs</depend>
+  <depend>multiwii_msgs</depend>
+
+  <build_depend>eigen</build_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
