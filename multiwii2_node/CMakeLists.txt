@@ -36,6 +36,7 @@ ament_target_dependencies(MultiWiiNode
   sensor_msgs
   std_msgs
   multiwii_msgs
+  mavros_msgs
   class_loader
 )
 target_link_libraries(MultiWiiNode ${msp_LIBRARIES})

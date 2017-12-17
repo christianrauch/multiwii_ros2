@@ -9,7 +9,7 @@
 #include <std_msgs/msg/u_int16.hpp>
 #include <std_msgs/msg/u_int32.hpp>
 #include <std_msgs/msg/u_int8_multi_array.hpp>
-#include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -33,12 +33,52 @@ class MultiWiiNode : public rclcpp::Node {
 public:
     MultiWiiNode();
 
-    void onImu(const msp::msg::ImuRaw &imu);
-
 private:
     std::unique_ptr<fcu::FlightController> fcu;
 
+    rclcpp::Clock clk;
+
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_pose;
+    rclcpp::Publisher<mavros_msgs::msg::RCIn>::SharedPtr pub_rc_in;
+    rclcpp::Publisher<mavros_msgs::msg::RCOut>::SharedPtr pub_motors;
+    rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_arm_status;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_failsafe_status;
+
+    rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in;
+    rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in_raw;
+
+    static double deg2rad(const double deg) {
+        return deg/180.0 * M_PI;
+    }
+
+    static double rad2deg(const double rad) {
+        return rad/M_PI * 180.0;
+    }
+
+    void onImu(const msp::msg::ImuRaw &imu);
+
+    void onAttitude(const msp::msg::Attitude &attitude);
+
+    void onRc(const msp::msg::Rc &rc);
+
+    void onMotor(const msp::msg::Motor &motor);
+
+    void onAnalog(const msp::msg::Analog &analog);
+
+    void onStatus(const msp::msg::Status &status);
+
+    void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
+        fcu->setRc(rc->channels[0], rc->channels[1], rc->channels[2], rc->channels[3],
+                   rc->channels[4], rc->channels[5], rc->channels[6], rc->channels[7]);
+    }
+
+    void rc_override_raw(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
+        std::vector<uint16_t> channels;
+        for(const uint16_t c : rc->channels) { channels.push_back(c); }
+        fcu->setRc(channels);
+    }
 };
 
 #endif // MULTIWIINODE_HPP
