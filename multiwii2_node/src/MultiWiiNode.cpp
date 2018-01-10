@@ -15,9 +15,9 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     pub_failsafe_status = create_publisher<std_msgs::msg::Bool>("status/failsafe");
 
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override", std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1));
+                "rc/override", std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1), qos);
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override/raw", std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
+                "rc/override/raw", std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1), qos);
 
     fcu->subscribe(&MultiWiiNode::onImu, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onAttitude, this, 0.1);
@@ -121,5 +121,12 @@ void MultiWiiNode::onStatus(const msp::msg::Status &status) {
     }
     pub_failsafe_status->publish(failsave_active);
 }
+
+const rmw_qos_profile_t MultiWiiNode::qos = {
+    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
+    1,
+    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+    RMW_QOS_POLICY_DURABILITY_VOLATILE,
+    false};
 
 CLASS_LOADER_REGISTER_CLASS(MultiWiiNode, rclcpp::Node)
