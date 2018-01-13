@@ -45,6 +45,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_arm_status;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_failsafe_status;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_altitude;
 
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in;
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in_raw;
@@ -71,6 +72,8 @@ private:
     void onAnalog(const msp::msg::Analog &analog);
 
     void onStatus(const msp::msg::Status &status);
+
+    void onAltitude(const msp::msg::Altitude &altitude);
 
     void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
         fcu->setRc(rc->channels[0], rc->channels[1], rc->channels[2], rc->channels[3],

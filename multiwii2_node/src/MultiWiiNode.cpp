@@ -13,6 +13,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery");
     pub_arm_status = create_publisher<std_msgs::msg::Bool>("status/armed");
     pub_failsafe_status = create_publisher<std_msgs::msg::Bool>("status/failsafe");
+    pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt");
 
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
                 "rc/override", std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1), qos);
@@ -25,6 +26,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     fcu->subscribe(&MultiWiiNode::onMotor, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onAnalog, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onStatus, this, 0.1);
+    fcu->subscribe(&MultiWiiNode::onAltitude, this, 0.1);
 }
 
 void MultiWiiNode::onImu(const msp::msg::ImuRaw &imu) {
@@ -120,6 +122,12 @@ void MultiWiiNode::onStatus(const msp::msg::Status &status) {
         failsave_active.data = false;
     }
     pub_failsafe_status->publish(failsave_active);
+}
+
+void MultiWiiNode::onAltitude(const msp::msg::Altitude &altitude) {
+    std_msgs::msg::Float64 alt; // altitude in meter
+    alt.data = altitude.altitude;
+    pub_altitude->publish(alt);
 }
 
 const rmw_qos_profile_t MultiWiiNode::qos = {
