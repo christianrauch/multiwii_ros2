@@ -20,7 +20,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
                 "rc/override/raw", std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1), qos);
 
-    fcu->subscribe(&MultiWiiNode::onImu, this, 0.1);
+    fcu->subscribe(&MultiWiiNode::onImu, this, 0.01);
     fcu->subscribe(&MultiWiiNode::onAttitude, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onRc, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onMotor, this, 0.1);
