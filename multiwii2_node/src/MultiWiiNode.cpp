@@ -1,6 +1,6 @@
 #include <MultiWiiNode.hpp>
 #include <msp/msg_print.hpp>
-#include <class_loader/class_loader_register_macro.h>
+#include <class_loader/register_macro.hpp>
 
 MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     fcu = std::make_unique<fcu::FlightController>("/dev/ttyUSB0", 500000);
