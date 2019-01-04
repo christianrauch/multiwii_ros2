@@ -15,8 +15,13 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-file(GLOB msg_files "msg/*.msg")
-file(GLOB srv_files "srv/*.srv")
+set(msg_files
+    "msg/MSPRawMessage.msg"
+)
+set(srv_files
+    "srv/ReceiveMSPRawMessage.srv"
+    "srv/SendMSPRawMessage.srv"
+)
 
 rosidl_generate_interfaces(${PROJECT_NAME} ${msg_files} ${srv_files})
 

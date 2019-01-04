@@ -17,8 +17,15 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 
-file(GLOB msg_files "msg/*.msg")
-file(GLOB srv_files "srv/*.srv")
+set(msg_files
+    "msg/ActuatorControl.msg"
+    "msg/OverrideRCIn.msg"
+    "msg/RCIn.msg"
+    "msg/RCOut.msg"
+)
+set(srv_files
+    "srv/CommandBool.srv"
+)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
