@@ -1,18 +1,15 @@
 #include <MultiWiiNode.hpp>
-#include <msp/msg_print.hpp>
 #include <class_loader/register_macro.hpp>
 
 MultiWiiNode::MultiWiiNode() : Node("multiwii") {
-    fcu = std::make_unique<fcu::FlightController>("/dev/ttyUSB0", 500000);
-    fcu->initialise();
+    fcu = std::make_unique<fcu::FlightController>();
+    fcu->connect("/dev/ttyUSB0", 500000);
 
     pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data");
     pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose");
     pub_rc_in = create_publisher<mavros_msgs::msg::RCIn>("rc/in");
     pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors");
     pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery");
-    pub_arm_status = create_publisher<std_msgs::msg::Bool>("status/armed");
-    pub_failsafe_status = create_publisher<std_msgs::msg::Bool>("status/failsafe");
     pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt");
 
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
@@ -25,11 +22,10 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     fcu->subscribe(&MultiWiiNode::onRc, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onMotor, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onAnalog, this, 0.1);
-    fcu->subscribe(&MultiWiiNode::onStatus, this, 0.1);
     fcu->subscribe(&MultiWiiNode::onAltitude, this, 0.1);
 }
 
-void MultiWiiNode::onImu(const msp::msg::ImuRaw &imu) {
+void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {
     const msp::msg::ImuSI imu_si(imu, 512.0, 1/4.096, 0.092, 9.80665);
 
     sensor_msgs::msg::Imu imu_msg;
@@ -46,7 +42,7 @@ void MultiWiiNode::onImu(const msp::msg::ImuRaw &imu) {
     imu_msg.angular_velocity.z = deg2rad(imu_si.gyro[2]);
 
     // rotation from direction of acceleration and magnetic field
-    const Eigen::Vector3d magn(imu.magn[0], imu.magn[1], imu.magn[2]);
+    const Eigen::Vector3d magn(imu.mag[0], imu.mag[1], imu.mag[2]);
     const Eigen::Vector3d lin_acc(imu.acc[0], imu.acc[1], imu.acc[2]);
 
     // http://www.camelsoftware.com/2016/02/20/imu-maths/
@@ -67,9 +63,9 @@ void MultiWiiNode::onImu(const msp::msg::ImuRaw &imu) {
 void MultiWiiNode::onAttitude(const msp::msg::Attitude &attitude) {
     // r,p,y to rotation matrix
     Eigen::Matrix3f rot;
-    rot = Eigen::AngleAxisf(deg2rad(attitude.ang_x), Eigen::Vector3f::UnitX())
-        * Eigen::AngleAxisf(deg2rad(attitude.ang_y),  Eigen::Vector3f::UnitY())
-        * Eigen::AngleAxisf(deg2rad(attitude.heading), Eigen::Vector3f::UnitZ());
+    rot = Eigen::AngleAxisf(deg2rad(attitude.roll), Eigen::Vector3f::UnitX())
+        * Eigen::AngleAxisf(deg2rad(attitude.pitch),  Eigen::Vector3f::UnitY())
+        * Eigen::AngleAxisf(deg2rad(attitude.yaw), Eigen::Vector3f::UnitZ());
 
     const Eigen::Quaternionf quat(rot);
 
@@ -107,21 +103,6 @@ void MultiWiiNode::onAnalog(const msp::msg::Analog &analog) {
     battery.current = analog.amperage;
 
     pub_battery->publish(battery);
-}
-
-void MultiWiiNode::onStatus(const msp::msg::Status &status) {
-    std_msgs::msg::Bool armed;
-    armed.data = status.active_box_id.count(fcu->getBoxNames().at("ARM"));
-    pub_arm_status->publish(armed);
-
-    std_msgs::msg::Bool failsave_active;
-    if(fcu->isFirmwareCleanflight()) {
-        failsave_active.data = status.active_box_id.count(fcu->getBoxNames().at("FAILSAFE"));
-    }
-    else {
-        failsave_active.data = false;
-    }
-    pub_failsafe_status->publish(failsave_active);
 }
 
 void MultiWiiNode::onAltitude(const msp::msg::Altitude &altitude) {

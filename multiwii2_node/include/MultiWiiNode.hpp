@@ -43,8 +43,6 @@ private:
     rclcpp::Publisher<mavros_msgs::msg::RCIn>::SharedPtr pub_rc_in;
     rclcpp::Publisher<mavros_msgs::msg::RCOut>::SharedPtr pub_motors;
     rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_arm_status;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_failsafe_status;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_altitude;
 
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in;
@@ -61,7 +59,7 @@ private:
         return rad/M_PI * 180.0;
     }
 
-    void onImu(const msp::msg::ImuRaw &imu);
+    void onImu(const msp::msg::RawImu &imu);
 
     void onAttitude(const msp::msg::Attitude &attitude);
 
@@ -70,8 +68,6 @@ private:
     void onMotor(const msp::msg::Motor &motor);
 
     void onAnalog(const msp::msg::Analog &analog);
-
-    void onStatus(const msp::msg::Status &status);
 
     void onAltitude(const msp::msg::Altitude &altitude);
 
