@@ -13,6 +13,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -33,6 +34,7 @@ include_directories(include)
 add_library(MultiWiiNode SHARED src/MultiWiiNode.cpp)
 ament_target_dependencies(MultiWiiNode
   rclcpp
+  rclcpp_components
   sensor_msgs
   std_msgs
   multiwii_msgs
@@ -40,7 +42,7 @@ ament_target_dependencies(MultiWiiNode
   class_loader
 )
 target_link_libraries(MultiWiiNode ${msp_LIBRARIES})
-rclcpp_register_node_plugins(MultiWiiNode "MultiWiiNode")
+rclcpp_components_register_nodes(MultiWiiNode "MultiWiiNode")
 
 add_executable(multiwii_node src/multiwii_node.cpp)
 target_link_libraries(multiwii_node MultiWiiNode)
