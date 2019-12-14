@@ -5,17 +5,17 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     fcu = std::make_unique<fcu::FlightController>();
     fcu->connect("/dev/ttyUSB0", 500000);
 
-    pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data");
-    pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose");
-    pub_rc_in = create_publisher<mavros_msgs::msg::RCIn>("rc/in");
-    pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors");
-    pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery");
-    pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt");
+    pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data", rclcpp::SensorDataQoS());
+    pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose", rclcpp::SensorDataQoS());
+    pub_rc_in = create_publisher<mavros_msgs::msg::RCIn>("rc/in", rclcpp::SensorDataQoS());
+    pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors", rclcpp::SensorDataQoS());
+    pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery", rclcpp::SensorDataQoS());
+    pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt", rclcpp::SensorDataQoS());
 
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override", std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1), qos);
+                "rc/override", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1));
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override/raw", std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1), qos);
+                "rc/override/raw", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
 
     fcu->subscribe(&MultiWiiNode::onImu, this, 0.01);
     fcu->subscribe(&MultiWiiNode::onAttitude, this, 0.1);
@@ -110,12 +110,5 @@ void MultiWiiNode::onAltitude(const msp::msg::Altitude &altitude) {
     alt.data = altitude.altitude;
     pub_altitude->publish(alt);
 }
-
-const rmw_qos_profile_t MultiWiiNode::qos = {
-    RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-    1,
-    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-    RMW_QOS_POLICY_DURABILITY_VOLATILE,
-    false};
 
 CLASS_LOADER_REGISTER_CLASS(MultiWiiNode, rclcpp::Node)
