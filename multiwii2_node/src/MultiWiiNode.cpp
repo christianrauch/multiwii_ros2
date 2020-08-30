@@ -1,9 +1,25 @@
 #include <MultiWiiNode.hpp>
 #include <class_loader/register_macro.hpp>
 
+static const std::set<std::string> sub_params = {
+    "imu", "attitude", "rc", "motor", "analog", "altitude"
+};
+
 MultiWiiNode::MultiWiiNode() : Node("multiwii") {
+    declare_parameter("device_path", "/dev/ttyUSB0");
+    declare_parameter("baud", 125200);
+
+    for(const std::string& sub_param : sub_params) {
+        declare_parameter("sub/"+sub_param);
+    }
+
+    const std::string device_path = get_parameter("device_path").as_string();
+    const size_t baud = get_parameter("baud").as_int();
+
+    std::cout << "open " << device_path << "@" << std::to_string(baud) << std::endl;
+
     fcu = std::make_unique<fcu::FlightController>();
-    fcu->connect("/dev/ttyUSB0", 500000);
+    fcu->connect(device_path, baud);
 
     pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data", rclcpp::SensorDataQoS());
     pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose", rclcpp::SensorDataQoS());
@@ -12,17 +28,63 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery", rclcpp::SensorDataQoS());
     pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt", rclcpp::SensorDataQoS());
 
+    param_cb_hndl = add_on_set_parameters_callback(std::bind(&MultiWiiNode::onParameterChange, this, std::placeholders::_1));
+
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
                 "rc/override", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1));
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
                 "rc/override/raw", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
 
-    fcu->subscribe(&MultiWiiNode::onImu, this, 0.01);
-    fcu->subscribe(&MultiWiiNode::onAttitude, this, 0.1);
-    fcu->subscribe(&MultiWiiNode::onRc, this, 0.1);
-    fcu->subscribe(&MultiWiiNode::onMotor, this, 0.1);
-    fcu->subscribe(&MultiWiiNode::onAnalog, this, 0.1);
-    fcu->subscribe(&MultiWiiNode::onAltitude, this, 0.1);
+    // subscribe with default period
+    set_parameter({"sub/imu", 0.01});       // 102
+    set_parameter({"sub/motor", 0.1});      // 104
+    set_parameter({"sub/rc", 0.1});         // 105
+    set_parameter({"sub/attitude", 0.1});   // 108
+    set_parameter({"sub/altitude", 0.1});   // 109
+    set_parameter({"sub/analog", 0.1});     // 110
+}
+
+bool MultiWiiNode::subscribe(const std::string &topic, const double period) {
+    if (topic=="imu")
+        fcu->subscribe(&MultiWiiNode::onImu, this, period);
+    else if (topic=="attitude")
+        fcu->subscribe(&MultiWiiNode::onAttitude, this, period);
+    else if (topic=="rc")
+        fcu->subscribe(&MultiWiiNode::onRc, this, period);
+    else if (topic=="motor")
+        fcu->subscribe(&MultiWiiNode::onMotor, this, period);
+    else if (topic=="analog")
+        fcu->subscribe(&MultiWiiNode::onAnalog, this, period);
+    else if (topic=="altitude")
+        fcu->subscribe(&MultiWiiNode::onAltitude, this, period);
+    else
+        return false;
+
+    return true;
+}
+
+rcl_interfaces::msg::SetParametersResult MultiWiiNode::onParameterChange(const std::vector<rclcpp::Parameter> &parameters) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+    for (const auto & parameter : parameters) {
+        const std::string name = parameter.get_name();
+        static const std::string prefix = "sub/";
+        const std::string sub_name = name.substr(prefix.length(), name.length());
+        if (name.substr(0, prefix.length()) == prefix &&
+            sub_params.count(sub_name) &&
+            parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+        {
+            if(!subscribe(sub_name, parameter.as_double())) {
+                result.successful = false;
+                result.reason = "unknown subscriber";
+            }
+        }
+        else {
+            result.successful = false;
+            result.reason = "unknown or invalid parameter";
+        }
+    }
+    return result;
 }
 
 void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {

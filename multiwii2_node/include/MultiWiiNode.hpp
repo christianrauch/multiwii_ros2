@@ -48,6 +48,8 @@ private:
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in;
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in_raw;
 
+    OnSetParametersCallbackHandle::SharedPtr param_cb_hndl;
+
     static double deg2rad(const double deg) {
         return deg/180.0 * M_PI;
     }
@@ -55,6 +57,10 @@ private:
     static double rad2deg(const double rad) {
         return rad/M_PI * 180.0;
     }
+
+    rcl_interfaces::msg::SetParametersResult onParameterChange(const std::vector<rclcpp::Parameter> &parameters);
+
+    bool subscribe(const std::string &topic, const double period);
 
     void onImu(const msp::msg::RawImu &imu);
 
