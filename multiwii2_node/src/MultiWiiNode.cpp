@@ -145,6 +145,7 @@ void MultiWiiNode::onAttitude(const msp::msg::Attitude &attitude) {
 void MultiWiiNode::onRc(const msp::msg::Rc &rc) {
     mavros_msgs::msg::RCIn rc_msg;
     rc_msg.header.stamp = clk.now();
+    rc_msg.header.frame_id = "multiwii";
     rc_msg.channels = rc.channels;
 
     pub_rc_in->publish(rc_msg);
@@ -152,6 +153,8 @@ void MultiWiiNode::onRc(const msp::msg::Rc &rc) {
 
 void MultiWiiNode::onMotor(const msp::msg::Motor &motor) {
     mavros_msgs::msg::RCOut motor_out;
+    motor_out.header.stamp = clk.now();
+    motor_out.header.frame_id = "multiwii";
     for(const uint16_t m : motor.motor) {
         motor_out.channels.push_back(m);
     }
@@ -161,6 +164,7 @@ void MultiWiiNode::onMotor(const msp::msg::Motor &motor) {
 void MultiWiiNode::onAnalog(const msp::msg::Analog &analog) {
     sensor_msgs::msg::BatteryState battery;
     battery.header.stamp = clk.now();
+    battery.header.frame_id = "multiwii";
     battery.voltage = analog.vbat;
     battery.current = analog.amperage;
 
