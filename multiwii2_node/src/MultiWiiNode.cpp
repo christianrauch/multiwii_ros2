@@ -2,7 +2,7 @@
 #include <class_loader/register_macro.hpp>
 
 static const std::set<std::string> sub_params = {
-    "imu", "attitude", "rc", "motor", "analog", "altitude"
+    "imu", "motor", "rc", "attitude", "altitude", "analog", "voltage", "current", "battery"
 };
 
 MultiWiiNode::MultiWiiNode() : Node("multiwii") {
@@ -42,6 +42,9 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     set_parameter({"sub/attitude", 0.1});   // 108
     set_parameter({"sub/altitude", 0.1});   // 109
     set_parameter({"sub/analog", 0.1});     // 110
+    set_parameter({"sub/voltage", 1});      // 128
+    set_parameter({"sub/current", 1});      // 129
+    set_parameter({"sub/battery", 1});      // 130
 }
 
 bool MultiWiiNode::subscribe(const std::string &topic, const double period) {
@@ -57,6 +60,12 @@ bool MultiWiiNode::subscribe(const std::string &topic, const double period) {
         fcu->subscribe(&MultiWiiNode::onAnalog, this, period);
     else if (topic=="altitude")
         fcu->subscribe(&MultiWiiNode::onAltitude, this, period);
+    else if (topic=="voltage")
+        fcu->subscribe(&MultiWiiNode::onVoltage, this, period);
+    else if (topic=="current")
+        fcu->subscribe(&MultiWiiNode::onCurrent, this, period);
+    else if (topic=="battery")
+        fcu->subscribe(&MultiWiiNode::onBattery, this, period);
     else
         return false;
 
@@ -175,6 +184,21 @@ void MultiWiiNode::onAltitude(const msp::msg::Altitude &altitude) {
     std_msgs::msg::Float64 alt; // altitude in meter
     alt.data = altitude.altitude;
     pub_altitude->publish(alt);
+}
+
+void MultiWiiNode::onVoltage(const msp::msg::VoltageMeters &voltage_meters) {
+//    std::cout << voltage_meters << std::endl;
+    (void)voltage_meters;
+}
+
+void MultiWiiNode::onCurrent(const msp::msg::CurrentMeters &current_meters) {
+//    std::cout << current_meters << std::endl;
+    (void)current_meters;
+}
+
+void MultiWiiNode::onBattery(const msp::msg::BatteryState &battery_state) {
+//    std::cout << battery_state << std::endl;
+    (void)battery_state;
 }
 
 CLASS_LOADER_REGISTER_CLASS(MultiWiiNode, rclcpp::Node)

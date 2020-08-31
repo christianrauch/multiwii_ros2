@@ -74,6 +74,12 @@ private:
 
     void onAltitude(const msp::msg::Altitude &altitude);
 
+    void onVoltage(const msp::msg::VoltageMeters &voltage_meters);
+
+    void onCurrent(const msp::msg::CurrentMeters &current_meters);
+
+    void onBattery(const msp::msg::BatteryState &battery_state);
+
     void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
         fcu->setRc(rc->channels[0], rc->channels[1], rc->channels[2], rc->channels[3],
                    rc->channels[4], rc->channels[5], rc->channels[6], rc->channels[7]);
