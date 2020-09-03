@@ -31,9 +31,11 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii") {
     param_cb_hndl = add_on_set_parameters_callback(std::bind(&MultiWiiNode::onParameterChange, this, std::placeholders::_1));
 
     sub_rc_in = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1));
+                "rc/override", rclcpp::SystemDefaultsQoS(),
+                std::bind(&MultiWiiNode::rc_override_AERT1234, this, std::placeholders::_1));
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
-                "rc/override/raw", rclcpp::SystemDefaultsQoS(), std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
+                "rc/override/raw", rclcpp::SystemDefaultsQoS(),
+                std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
 
     // subscribe with default period
     set_parameter({"sub/imu", 0.01});       // 102
@@ -199,6 +201,20 @@ void MultiWiiNode::onCurrent(const msp::msg::CurrentMeters &current_meters) {
 void MultiWiiNode::onBattery(const msp::msg::BatteryState &battery_state) {
 //    std::cout << battery_state << std::endl;
     (void)battery_state;
+}
+
+void MultiWiiNode::rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
+    // set channels in order of
+    // AERT (Aileron, Elevator, Rudder, Throttle), or
+    // RPYT (Roll, Pitch, Yaw, Throttle) respectively
+    fcu->setRc(rc->channels[0], rc->channels[1], rc->channels[2], rc->channels[3],
+               rc->channels[4], rc->channels[5], rc->channels[6], rc->channels[7]);
+}
+
+void MultiWiiNode::rc_override_raw(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
+    std::vector<uint16_t> channels;
+    for(const uint16_t c : rc->channels) { channels.push_back(c); }
+    fcu->setRc(channels);
 }
 
 CLASS_LOADER_REGISTER_CLASS(MultiWiiNode, rclcpp::Node)

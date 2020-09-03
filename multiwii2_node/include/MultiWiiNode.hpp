@@ -80,16 +80,9 @@ private:
 
     void onBattery(const msp::msg::BatteryState &battery_state);
 
-    void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
-        fcu->setRc(rc->channels[0], rc->channels[1], rc->channels[2], rc->channels[3],
-                   rc->channels[4], rc->channels[5], rc->channels[6], rc->channels[7]);
-    }
+    void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc);
 
-    void rc_override_raw(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
-        std::vector<uint16_t> channels;
-        for(const uint16_t c : rc->channels) { channels.push_back(c); }
-        fcu->setRc(channels);
-    }
+    void rc_override_raw(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc);
 };
 
 #endif // MULTIWIINODE_HPP
