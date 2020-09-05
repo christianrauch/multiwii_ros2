@@ -22,6 +22,7 @@ set(msg_files
     "msg/OverrideRCIn.msg"
     "msg/RCIn.msg"
     "msg/RCOut.msg"
+    "msg/State.msg"
 )
 set(srv_files
     "srv/CommandBool.srv"
