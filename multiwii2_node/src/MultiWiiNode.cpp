@@ -1,11 +1,14 @@
 #include <MultiWiiNode.hpp>
 #include <class_loader/register_macro.hpp>
 
+#include <geometry_msgs/msg/transform_stamped.hpp>
+
 static const std::set<std::string> sub_params = {
     "imu", "motor", "rc", "attitude", "altitude", "analog", "voltage", "current", "battery"
 };
 
-MultiWiiNode::MultiWiiNode() : Node("multiwii") {
+MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
+{
     declare_parameter("device_path", "/dev/ttyUSB0");
     declare_parameter("baud", 125200);
 
@@ -130,6 +133,12 @@ void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {
     imu_msg.orientation.z = orientation.z();
     imu_msg.orientation.w = orientation.w();
 
+    geometry_msgs::msg::TransformStamped tf;
+    tf.header = imu_msg.header;
+    tf.child_frame_id = "imu";
+    tf.transform.rotation = imu_msg.orientation;
+    tf_broadcaster.sendTransform(tf);
+
     pub_imu->publish(imu_msg);
 }
 
@@ -149,6 +158,12 @@ void MultiWiiNode::onAttitude(const msp::msg::Attitude &attitude) {
     pose_stamped.pose.orientation.y = quat.y();
     pose_stamped.pose.orientation.z = quat.z();
     pose_stamped.pose.orientation.w = quat.w();
+
+    geometry_msgs::msg::TransformStamped tf;
+    tf.header = pose_stamped.header;
+    tf.child_frame_id = "attitude";
+    tf.transform.rotation = pose_stamped.pose.orientation;
+    tf_broadcaster.sendTransform(tf);
 
     pub_pose->publish(pose_stamped);
 }
@@ -185,6 +200,14 @@ void MultiWiiNode::onAnalog(const msp::msg::Analog &analog) {
 void MultiWiiNode::onAltitude(const msp::msg::Altitude &altitude) {
     std_msgs::msg::Float64 alt; // altitude in meter
     alt.data = altitude.altitude;
+
+    geometry_msgs::msg::TransformStamped tf;
+    tf.header.stamp = clk.now();
+    tf.header.frame_id = "multiwii";
+    tf.child_frame_id = "altitude";
+    tf.transform.translation.z = altitude.altitude;
+    tf_broadcaster.sendTransform(tf);
+
     pub_altitude->publish(alt);
 }
 

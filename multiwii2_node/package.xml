@@ -21,6 +21,7 @@
   <depend>sensor_msgs</depend>
   <depend>mavros_msgs</depend>
   <depend>multiwii_msgs</depend>
+  <depend>tf2_ros</depend>
 
   <build_depend>eigen</build_depend>
 

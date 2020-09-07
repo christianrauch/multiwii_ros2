@@ -20,6 +20,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(multiwii_msgs REQUIRED)
 find_package(class_loader REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 include_directories(${Eigen3_INCLUDE_DIR})
@@ -37,9 +38,11 @@ ament_target_dependencies(MultiWiiNode
   rclcpp_components
   sensor_msgs
   std_msgs
+  geometry_msgs
   multiwii_msgs
   mavros_msgs
   class_loader
+  tf2_ros
 )
 target_link_libraries(MultiWiiNode ${msp_LIBRARIES})
 rclcpp_components_register_nodes(MultiWiiNode "MultiWiiNode")

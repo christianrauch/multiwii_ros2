@@ -2,6 +2,7 @@
 #define MULTIWIINODE_HPP
 
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <multiwii_msgs/srv/receive_msp_raw_message.hpp>
 #include <multiwii_msgs/srv/send_msp_raw_message.hpp>
@@ -49,6 +50,8 @@ private:
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in_raw;
 
     OnSetParametersCallbackHandle::SharedPtr param_cb_hndl;
+
+    tf2_ros::TransformBroadcaster tf_broadcaster;
 
     static double deg2rad(const double deg) {
         return deg/180.0 * M_PI;
