@@ -25,6 +25,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
     fcu->connect(device_path, baud);
 
     pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data", rclcpp::SensorDataQoS());
+    pub_mag = create_publisher<sensor_msgs::msg::MagneticField>("imu/mag", rclcpp::SensorDataQoS());
     pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose", rclcpp::SensorDataQoS());
     pub_rc_in = create_publisher<mavros_msgs::msg::RCIn>("rc/in", rclcpp::SensorDataQoS());
     pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors", rclcpp::SensorDataQoS());
@@ -117,15 +118,21 @@ void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {
     imu_msg.angular_velocity.y = deg2rad(imu_si.gyro[1]);
     imu_msg.angular_velocity.z = deg2rad(imu_si.gyro[2]);
 
+    sensor_msgs::msg::MagneticField mag_msg;
+    mag_msg.header = imu_msg.header;
+    mag_msg.magnetic_field.x = imu_si.mag[0] * 1e-6;
+    mag_msg.magnetic_field.y = imu_si.mag[1] * 1e-6;
+    mag_msg.magnetic_field.z = imu_si.mag[2] * 1e-6;
+
     // rotation from direction of acceleration and magnetic field
     const Eigen::Vector3d magn(imu.mag[0], imu.mag[1], imu.mag[2]);
     const Eigen::Vector3d lin_acc(imu.acc[0], imu.acc[1], imu.acc[2]);
 
     // http://www.camelsoftware.com/2016/02/20/imu-maths/
     Eigen::Matrix3d rot;
-    rot.col(0) = lin_acc.cross(magn).cross(lin_acc).normalized();
-    rot.col(1) = lin_acc.cross(magn).normalized();
-    rot.col(2) = lin_acc.normalized();
+    rot.col(0) = lin_acc.cross(magn).cross(lin_acc).normalized();   // north
+    rot.col(1) = lin_acc.cross(magn).normalized();                  // east
+    rot.col(2) = lin_acc.normalized();                              // down
 
     const Eigen::Quaterniond orientation(rot);
     imu_msg.orientation.x = orientation.x();
@@ -140,6 +147,7 @@ void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {
     tf_broadcaster.sendTransform(tf);
 
     pub_imu->publish(imu_msg);
+    pub_mag->publish(mag_msg);
 }
 
 void MultiWiiNode::onAttitude(const msp::msg::Attitude &attitude) {

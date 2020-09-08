@@ -40,6 +40,7 @@ private:
     rclcpp::Clock clk;
 
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu;
+    rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr pub_mag;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_pose;
     rclcpp::Publisher<mavros_msgs::msg::RCIn>::SharedPtr pub_rc_in;
     rclcpp::Publisher<mavros_msgs::msg::RCOut>::SharedPtr pub_motors;
