@@ -24,8 +24,8 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
     fcu = std::make_unique<fcu::FlightController>();
     fcu->connect(device_path, baud);
 
-    pub_imu = create_publisher<sensor_msgs::msg::Imu>("imu/data", rclcpp::SensorDataQoS());
-    pub_mag = create_publisher<sensor_msgs::msg::MagneticField>("imu/mag", rclcpp::SensorDataQoS());
+    pub_imu_raw = create_publisher<sensor_msgs::msg::Imu>("imu/data_raw", rclcpp::SensorDataQoS());
+    pub_imu_mag = create_publisher<sensor_msgs::msg::MagneticField>("imu/mag", rclcpp::SensorDataQoS());
     pub_pose = create_publisher<geometry_msgs::msg::PoseStamped>("local_position/pose", rclcpp::SensorDataQoS());
     pub_rc_in = create_publisher<mavros_msgs::msg::RCIn>("rc/in", rclcpp::SensorDataQoS());
     pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors", rclcpp::SensorDataQoS());
@@ -105,49 +105,28 @@ rcl_interfaces::msg::SetParametersResult MultiWiiNode::onParameterChange(const s
 void MultiWiiNode::onImu(const msp::msg::RawImu &imu) {
     const msp::msg::ImuSI imu_si(imu, 512.0, 1/4.096, 0.092, 9.80665);
 
+    std_msgs::msg::Header hdr;
+    hdr.stamp = clk.now();
+    hdr.frame_id = "multiwii";
+
+    // raw imu data without orientation
     sensor_msgs::msg::Imu imu_msg;
-
-    imu_msg.header.stamp = clk.now();
-    imu_msg.header.frame_id = "multiwii";
-
+    imu_msg.header = hdr;
     imu_msg.linear_acceleration.x = imu_si.acc[0];
     imu_msg.linear_acceleration.y = imu_si.acc[1];
     imu_msg.linear_acceleration.z = imu_si.acc[2];
-
     imu_msg.angular_velocity.x = deg2rad(imu_si.gyro[0]);
     imu_msg.angular_velocity.y = deg2rad(imu_si.gyro[1]);
     imu_msg.angular_velocity.z = deg2rad(imu_si.gyro[2]);
+    pub_imu_raw->publish(imu_msg);
 
+    // magnetic field vector
     sensor_msgs::msg::MagneticField mag_msg;
-    mag_msg.header = imu_msg.header;
+    mag_msg.header = hdr;
     mag_msg.magnetic_field.x = imu_si.mag[0] * 1e-6;
     mag_msg.magnetic_field.y = imu_si.mag[1] * 1e-6;
     mag_msg.magnetic_field.z = imu_si.mag[2] * 1e-6;
-
-    // rotation from direction of acceleration and magnetic field
-    const Eigen::Vector3d magn(imu.mag[0], imu.mag[1], imu.mag[2]);
-    const Eigen::Vector3d lin_acc(imu.acc[0], imu.acc[1], imu.acc[2]);
-
-    // http://www.camelsoftware.com/2016/02/20/imu-maths/
-    Eigen::Matrix3d rot;
-    rot.col(0) = lin_acc.cross(magn).cross(lin_acc).normalized();   // north
-    rot.col(1) = lin_acc.cross(magn).normalized();                  // east
-    rot.col(2) = lin_acc.normalized();                              // down
-
-    const Eigen::Quaterniond orientation(rot);
-    imu_msg.orientation.x = orientation.x();
-    imu_msg.orientation.y = orientation.y();
-    imu_msg.orientation.z = orientation.z();
-    imu_msg.orientation.w = orientation.w();
-
-    geometry_msgs::msg::TransformStamped tf;
-    tf.header = imu_msg.header;
-    tf.child_frame_id = "imu";
-    tf.transform.rotation = imu_msg.orientation;
-    tf_broadcaster.sendTransform(tf);
-
-    pub_imu->publish(imu_msg);
-    pub_mag->publish(mag_msg);
+    pub_imu_mag->publish(mag_msg);
 }
 
 void MultiWiiNode::onAttitude(const msp::msg::Attitude &attitude) {
