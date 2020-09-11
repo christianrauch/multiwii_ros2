@@ -25,6 +25,7 @@
 #include <mavros_msgs/msg/override_rc_in.hpp>
 #include <mavros_msgs/msg/actuator_control.hpp>
 #include <mavros_msgs/srv/command_bool.hpp>
+#include <mavros_msgs/msg/state.hpp>
 
 #include <eigen3/Eigen/Geometry>
 
@@ -46,6 +47,7 @@ private:
     rclcpp::Publisher<mavros_msgs::msg::RCOut>::SharedPtr pub_motors;
     rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pub_altitude;
+    rclcpp::Publisher<mavros_msgs::msg::State>::SharedPtr pub_state;
 
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in;
     rclcpp::Subscription<mavros_msgs::msg::OverrideRCIn>::SharedPtr sub_rc_in_raw;
@@ -53,6 +55,8 @@ private:
     OnSetParametersCallbackHandle::SharedPtr param_cb_hndl;
 
     tf2_ros::TransformBroadcaster tf_broadcaster;
+
+    rclcpp::TimerBase::SharedPtr timer_state;
 
     static double deg2rad(const double deg) {
         return deg/180.0 * M_PI;
@@ -83,6 +87,8 @@ private:
     void onCurrent(const msp::msg::CurrentMeters &current_meters);
 
     void onBattery(const msp::msg::BatteryState &battery_state);
+
+    void onState();
 
     void rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc);
 

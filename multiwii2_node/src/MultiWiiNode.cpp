@@ -3,6 +3,8 @@
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
+using namespace std::chrono_literals;
+
 static const std::set<std::string> sub_params = {
     "imu", "motor", "rc", "attitude", "altitude", "analog", "voltage", "current", "battery"
 };
@@ -31,6 +33,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
     pub_motors = create_publisher<mavros_msgs::msg::RCOut>("motors", rclcpp::SensorDataQoS());
     pub_battery = create_publisher<sensor_msgs::msg::BatteryState>("battery", rclcpp::SensorDataQoS());
     pub_altitude = create_publisher<std_msgs::msg::Float64>("global_position/rel_alt", rclcpp::SensorDataQoS());
+    pub_state = create_publisher<mavros_msgs::msg::State>("state", rclcpp::SensorDataQoS());
 
     param_cb_hndl = add_on_set_parameters_callback(std::bind(&MultiWiiNode::onParameterChange, this, std::placeholders::_1));
 
@@ -40,6 +43,8 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
     sub_rc_in_raw = this->create_subscription<mavros_msgs::msg::OverrideRCIn>(
                 "rc/override/raw", rclcpp::SystemDefaultsQoS(),
                 std::bind(&MultiWiiNode::rc_override_raw, this, std::placeholders::_1));
+
+    timer_state = create_wall_timer(100ms, std::bind(&MultiWiiNode::onState, this));
 
     // subscribe with default period
     set_parameter({"sub/imu", 0.01});       // 102
@@ -211,6 +216,12 @@ void MultiWiiNode::onCurrent(const msp::msg::CurrentMeters &current_meters) {
 void MultiWiiNode::onBattery(const msp::msg::BatteryState &battery_state) {
 //    std::cout << battery_state << std::endl;
     (void)battery_state;
+}
+
+void MultiWiiNode::onState() {
+    mavros_msgs::msg::State state;
+    state.armed = fcu->isArmed();
+    pub_state->publish(state);
 }
 
 void MultiWiiNode::rc_override_AERT1234(const mavros_msgs::msg::OverrideRCIn::SharedPtr rc) {
