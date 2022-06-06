@@ -15,7 +15,7 @@ MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
     declare_parameter("baud", 115200);
 
     for(const std::string& sub_param : sub_params) {
-        declare_parameter("sub/"+sub_param);
+        declare_parameter<float>("sub/"+sub_param);
     }
 
     const std::string device_path = get_parameter("device_path").as_string();
