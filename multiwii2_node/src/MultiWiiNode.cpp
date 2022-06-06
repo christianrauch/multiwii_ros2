@@ -12,7 +12,7 @@ static const std::set<std::string> sub_params = {
 MultiWiiNode::MultiWiiNode() : Node("multiwii"), tf_broadcaster(this)
 {
     declare_parameter("device_path", "/dev/ttyUSB0");
-    declare_parameter("baud", 125200);
+    declare_parameter("baud", 115200);
 
     for(const std::string& sub_param : sub_params) {
         declare_parameter("sub/"+sub_param);
